@@ -22,19 +22,14 @@ import { editFileName, imageFileFilter } from '../utils/file-upload.utils';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @Post()
-  create(@Body() createUserDto: CreateUserDto) {
-    return this.usersService.create(createUserDto);
-  }
-
   @Get('profile')
   findProfile(@ActiveUser() user: ActiveUserData) {
     return this.usersService.findProfile(user);
   }
 
   @Get()
-  findAll() {
-    return this.usersService.findAll();
+  findAll(@ActiveUser() user: ActiveUserData) {
+    return this.usersService.findAll(user);
   }
 
   @Get(':id')
