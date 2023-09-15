@@ -5,14 +5,13 @@ import { UsersModule } from './users/users.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { IamModule } from './iam/iam.module';
 import { ConfigModule } from '@nestjs/config';
-import { MulterModule } from '@nestjs/platform-express';
 import { ServeStaticModule } from '@nestjs/serve-static/dist/serve-static.module';
 import { join } from 'path';
+import { ChatModule } from './chat/chat.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot(),
-
     UsersModule,
     TypeOrmModule.forRoot({
       type: 'postgres',
@@ -24,13 +23,11 @@ import { join } from 'path';
       autoLoadEntities: true,
       synchronize: true,
     }),
-    IamModule,
-    // MulterModule.register({
-    //   dest: './uploads',
-    // }),
+    // IamModule,
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'uploads'),
     }),
+    ChatModule,
   ],
   controllers: [AppController],
   providers: [AppService],
