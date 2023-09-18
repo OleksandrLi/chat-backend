@@ -14,8 +14,6 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { ActiveUser } from '../iam/decorators/active-user-decorator';
 import { ActiveUserData } from '../iam/interfaces/active-user-data.interface';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { editFileName, imageFileFilter } from '../utils/file-upload.utils';
 
 @Controller('users')
 export class UsersController {
@@ -47,16 +45,11 @@ export class UsersController {
   }
 
   @Post('update-avatar')
-  @UseInterceptors(
-    FileInterceptor('image', {
-      storage: diskStorage({
-        destination: './uploads',
-        filename: editFileName,
-      }),
-      fileFilter: imageFileFilter,
-    }),
-  )
-  async uploadedFile(@UploadedFile() file, @ActiveUser() user: ActiveUserData) {
-    return this.usersService.uploadAvatar(file, user);
+  @UseInterceptors(FileInterceptor('file'))
+  uploadFile(
+    @UploadedFile() file: Express.Multer.File,
+    @ActiveUser() user: ActiveUserData,
+  ) {
+    return this.usersService.uploadFile(file, user);
   }
 }
