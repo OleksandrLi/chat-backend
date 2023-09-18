@@ -1,20 +1,29 @@
-import { Controller, Get, Param } from '@nestjs/common';
-import { Room } from './interfaces/chat.interface';
+import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { IRoom } from './interfaces/chat.interface';
 import { ChatService } from './chat.service';
+import { CreateRoomDto } from './dto/create-room.dto';
 
-@Controller()
+@Controller('rooms')
 export class ChatController {
-  constructor(private userService: ChatService) {}
+  constructor(private readonly chatService: ChatService) {}
 
-  @Get('api/rooms')
-  async getAllRooms(): Promise<Room[]> {
-    return await this.userService.getRooms();
+  @Get('')
+  getAllRooms(): Promise<IRoom[]> {
+    return this.chatService.getRooms();
   }
 
-  @Get('api/rooms/:room')
-  async getRoom(@Param() params): Promise<Room> {
-    const rooms = await this.userService.getRooms();
-    const room = await this.userService.getRoomByName(params.room);
-    return rooms[room];
+  @Get('roomId=:roomId')
+  getRoom(@Param() params) {
+    return this.chatService.getRoomById(params.roomId);
+  }
+
+  @Get(':user1Id/:user2Id')
+  getRoomByUsersId(@Param() params) {
+    return this.chatService.getRoomByUsersId(params.user1Id, params.user2Id);
+  }
+
+  @Post('')
+  addRoom(@Body() createRoomDto: CreateRoomDto) {
+    return this.chatService.addRoom(createRoomDto);
   }
 }

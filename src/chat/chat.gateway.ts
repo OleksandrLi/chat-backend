@@ -11,10 +11,10 @@ import {
   ServerToClientEvents,
   ClientToServerEvents,
   Message,
-  User,
 } from './interfaces/chat.interface';
 import { Server, Socket } from 'socket.io';
 import { ChatService } from './chat.service';
+import { User } from '../users/entities/user.entity';
 
 @WebSocketGateway({
   cors: {
@@ -31,22 +31,13 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   private logger = new Logger('ChatGateway');
 
-  async handleEvent(
-    @MessageBody()
-    payload: Message,
-  ): Promise<Message> {
-    this.logger.log(payload);
-    this.server.emit('chat', payload); // <--- ServerToClientEvent
-    return payload;
-  }
-
   @SubscribeMessage('chat')
   async handleChatEvent(
     @MessageBody()
     payload: Message,
   ): Promise<Message> {
     this.logger.log(payload);
-    this.server.to(payload.roomName).emit('chat', payload); // broadcast messages
+    this.server.to(payload.roomId).emit('chat', payload); // broadcast messages
     return payload;
   }
 
@@ -54,16 +45,16 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   async handleSetClientDataEvent(
     @MessageBody()
     payload: {
-      roomName: string;
+      roomId: string;
       user: User;
+      socketId: string;
     },
   ) {
-    if (payload.user.socketId) {
+    if (payload.socketId) {
       this.logger.log(
-        `${payload.user.socketId} is joining ${payload.roomName}`,
+        `${payload.socketId} ${payload.user.name} is joining ${payload.roomId}`,
       );
-      await this.server.in(payload.user.socketId).socketsJoin(payload.roomName);
-      await this.userService.addUserToRoom(payload.roomName, payload.user);
+      await this.server.in(payload.socketId).socketsJoin(payload.roomId);
     }
   }
 
@@ -72,7 +63,6 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   async handleDisconnect(socket: Socket): Promise<void> {
-    await this.userService.removeUserFromAllRooms(socket.id);
     this.logger.log(`Socket disconnected: ${socket.id}`);
   }
 }

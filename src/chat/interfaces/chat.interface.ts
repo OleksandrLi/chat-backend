@@ -1,20 +1,16 @@
-export interface User {
-  userId: string;
-  userName: string;
-  socketId: string;
-}
+import { User } from '../../users/entities/user.entity';
 
-export interface Room {
-  name: string;
-  host: User;
-  users: User[];
+export interface IRoom {
+  id: number;
+  roomId: string;
+  users: number[];
 }
 
 export interface Message {
   user: User;
   timeSent: string;
   message: string;
-  roomName: string;
+  roomId: string;
 }
 
 export interface ServerToClientEvents {

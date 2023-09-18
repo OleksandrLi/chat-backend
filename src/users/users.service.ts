@@ -26,6 +26,7 @@ export class UsersService {
     });
     return {
       profile: {
+        id: userProfile.id,
         name: userProfile.name,
         email: userProfile.email,
         image: userProfile.image,

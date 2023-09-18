@@ -23,7 +23,7 @@ import { ChatModule } from './chat/chat.module';
       autoLoadEntities: true,
       synchronize: true,
     }),
-    // IamModule,
+    IamModule,
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'uploads'),
     }),
