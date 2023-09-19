@@ -1,5 +1,7 @@
 import {
+  BadRequestException,
   ConflictException,
+  ForbiddenException,
   Inject,
   Injectable,
   UnauthorizedException,
@@ -50,14 +52,14 @@ export class AuthenticationService {
       email: signInDto.email,
     });
     if (!user) {
-      throw new UnauthorizedException('User does not exists');
+      throw new ForbiddenException('User does not exists');
     }
     const isEqual = await this.hashingService.compare(
       signInDto.password,
       user.password,
     );
     if (!isEqual) {
-      throw new UnauthorizedException('Password does not match');
+      throw new BadRequestException('Password does not match');
     }
     return await this.generateTokens(user);
   }
