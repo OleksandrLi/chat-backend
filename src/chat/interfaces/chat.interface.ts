@@ -3,7 +3,7 @@ import { User } from '../../users/entities/user.entity';
 export interface IRoom {
   id: number;
   roomId: string;
-  users: number[];
+  usersIds: number[];
 }
 
 export interface Message {

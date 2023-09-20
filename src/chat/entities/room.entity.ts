@@ -1,4 +1,5 @@
 import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { User } from '../../users/entities/user.entity';
 
 @Entity()
 export class Room {
@@ -9,5 +10,13 @@ export class Room {
   roomId: string;
 
   @Column('int', { array: true })
-  users: number[];
+  usersIds: number[];
+
+  @Column({
+    type: 'jsonb',
+    array: false,
+    default: () => "'[]'",
+    nullable: false,
+  })
+  users: Array<User>;
 }

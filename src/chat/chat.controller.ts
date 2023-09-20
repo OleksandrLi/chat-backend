@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
 import { IRoom } from './interfaces/chat.interface';
 import { ChatService } from './chat.service';
 import { CreateRoomDto } from './dto/create-room.dto';
@@ -25,5 +25,15 @@ export class ChatController {
   @Post('')
   addRoom(@Body() createRoomDto: CreateRoomDto) {
     return this.chatService.addRoom(createRoomDto);
+  }
+
+  @Delete(':roomId')
+  removeRoom(@Param() params) {
+    return this.chatService.deleteRoom(params.roomId);
+  }
+
+  @Delete('')
+  removeRooms() {
+    return this.chatService.deleteRooms();
   }
 }
