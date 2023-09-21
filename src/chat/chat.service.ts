@@ -8,7 +8,6 @@ import { ArrayContains, Repository } from 'typeorm';
 import { Room } from './entities/room.entity';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { v4 as uuidv4 } from 'uuid';
-import { User } from '../users/entities/user.entity';
 import { CreateMessageDto } from './dto/create-message-dto';
 
 @Injectable()
@@ -16,8 +15,6 @@ export class ChatService {
   constructor(
     @InjectRepository(Room)
     private readonly roomsRepository: Repository<Room>,
-    @InjectRepository(User)
-    private readonly usersRepository: Repository<User>,
   ) {}
 
   async getRooms() {
@@ -69,6 +66,8 @@ export class ChatService {
     room.roomId = uuidv4();
     room.usersIds = createRoomDto.usersIds;
     room.users = createRoomDto.users;
+    room.users[0].isActive = false;
+    room.users[1].isActive = false;
 
     const isRoom = await this.roomsRepository.findBy({
       usersIds: ArrayContains(createRoomDto.usersIds),
@@ -109,5 +108,31 @@ export class ChatService {
 
   async deleteRooms() {
     return this.roomsRepository.clear();
+  }
+
+  async userJoinRoom(roomId: string, userId: number) {
+    const room = await this.roomsRepository.findOne({
+      where: { roomId: roomId },
+    });
+    const userUpdated = room.users.filter((item) => item.id === userId)[0];
+    const userOriginal = room.users.filter((item) => item.id !== userId)[0];
+    userUpdated.isActive = true;
+    room.users = [userUpdated, userOriginal];
+
+    await this.roomsRepository.save(room);
+    return room.users;
+  }
+
+  async userLeaveRoom(roomId: string, userId: number) {
+    const room = await this.roomsRepository.findOne({
+      where: { roomId: roomId },
+    });
+    const userUpdated = room.users.filter((item) => item.id === userId)[0];
+    const userOriginal = room.users.filter((item) => item.id !== userId)[0];
+    userUpdated.isActive = false;
+    room.users = [userUpdated, userOriginal];
+
+    await this.roomsRepository.save(room);
+    return room.users;
   }
 }

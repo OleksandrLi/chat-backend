@@ -13,7 +13,6 @@ import {
 } from './interfaces/chat.interface';
 import { Server, Socket } from 'socket.io';
 import { ChatService } from './chat.service';
-import { User } from '../users/entities/user.entity';
 import { Message } from './entities/message.entity';
 
 @WebSocketGateway({
@@ -22,7 +21,10 @@ import { Message } from './entities/message.entity';
   },
 })
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
-  constructor(private userService: ChatService) {}
+  constructor(
+    private userService: ChatService,
+    private chatService: ChatService,
+  ) {}
 
   @WebSocketServer() server: Server = new Server<
     ServerToClientEvents,
@@ -37,7 +39,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     payload: Message,
   ): Promise<Message> {
     this.logger.log(payload);
-    this.server.to(payload.roomId).emit('chat', payload); // broadcast messages
+    this.server.to(payload.roomId).emit('chat', payload);
     return payload;
   }
 
@@ -46,15 +48,36 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody()
     payload: {
       roomId: string;
-      user: User;
+      userId: number;
       socketId: string;
     },
   ) {
     if (payload.socketId) {
-      this.logger.log(
-        `${payload.socketId} ${payload.user.name} is joining ${payload.roomId}`,
-      );
       await this.server.in(payload.socketId).socketsJoin(payload.roomId);
+      const users = await this.chatService.userJoinRoom(
+        payload.roomId,
+        payload.userId,
+      );
+      this.server.to(payload.roomId).emit('join_room', users);
+    }
+  }
+
+  @SubscribeMessage('leave_room')
+  async handleLeaveClientDataEvent(
+    @MessageBody()
+    payload: {
+      roomId: string;
+      userId: number;
+      socketId: string;
+    },
+  ) {
+    if (payload.socketId) {
+      await this.server.in(payload.socketId).socketsLeave(payload.roomId);
+      const users = await this.chatService.userLeaveRoom(
+        payload.roomId,
+        payload.userId,
+      );
+      this.server.to(payload.roomId).emit('leave_room', users);
     }
   }
 

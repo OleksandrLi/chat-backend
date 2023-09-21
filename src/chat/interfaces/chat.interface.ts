@@ -1,5 +1,19 @@
-import { User } from '../../users/entities/user.entity';
-import { Message } from '../entities/message.entity';
+export interface User {
+  id: number;
+  name: string;
+  email: string;
+  image: string;
+  isActive?: boolean;
+}
+
+export interface Message {
+  id: number;
+  messageId: string;
+  user: User;
+  timeSent: string;
+  message: string;
+  roomId: string;
+}
 
 export interface ServerToClientEvents {
   chat: (e: Message) => void;

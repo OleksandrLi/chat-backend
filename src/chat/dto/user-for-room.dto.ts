@@ -13,6 +13,4 @@ export class UserForRoomDto {
 
   @IsString()
   image: string;
-
-  password: string;
 }

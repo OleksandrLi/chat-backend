@@ -1,6 +1,6 @@
 import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
-import { User } from '../../users/entities/user.entity';
 import { Message } from './message.entity';
+import { User } from '../interfaces/chat.interface';
 
 @Entity()
 export class Room {
