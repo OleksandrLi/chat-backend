@@ -1,10 +1,15 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ArrayContains, Repository } from 'typeorm';
 import { Room } from './entities/room.entity';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { v4 as uuidv4 } from 'uuid';
 import { User } from '../users/entities/user.entity';
+import { CreateMessageDto } from './dto/create-message-dto';
 
 @Injectable()
 export class ChatService {
@@ -22,9 +27,21 @@ export class ChatService {
   async getRoomById(roomId: string) {
     const room = await this.roomsRepository.findOne({
       where: { roomId: roomId },
-      select: { roomId: true, usersIds: true, users: true },
+      select: { roomId: true, usersIds: true, users: true, messages: true },
     });
-    return { room: room };
+
+    if (!room) {
+      throw new ForbiddenException('Room does not exists');
+    }
+
+    return {
+      room: {
+        roomId: room.roomId,
+        usersIds: room.usersIds,
+        users: room.users,
+        messages: room.messages,
+      },
+    };
   }
 
   async getRoomByUsersId(user1Id: number, user2Id: number) {
@@ -42,6 +59,7 @@ export class ChatService {
         roomId: room.roomId,
         usersIds: room.usersIds,
         users: room.users,
+        messages: room.messages,
       },
     };
   }
@@ -61,6 +79,25 @@ export class ChatService {
       await this.roomsRepository.save(room);
       return { room: room };
     }
+  }
+
+  async sendMessage(createMessageDto: CreateMessageDto) {
+    const newMessage = createMessageDto;
+    newMessage.messageId = uuidv4();
+
+    const room = await this.roomsRepository.findOne({
+      where: { roomId: createMessageDto.roomId },
+    });
+    const updatedRoom = await this.roomsRepository.preload({
+      id: room.id,
+      usersIds: room.usersIds,
+      users: room.users,
+      messages: [...room.messages, newMessage],
+    });
+    if (!updatedRoom) {
+      throw new NotFoundException(`This chat was not found`);
+    }
+    return this.roomsRepository.save(updatedRoom);
   }
 
   async deleteRoom(roomId: string) {

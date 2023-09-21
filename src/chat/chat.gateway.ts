@@ -10,11 +10,11 @@ import { Logger } from '@nestjs/common';
 import {
   ServerToClientEvents,
   ClientToServerEvents,
-  Message,
 } from './interfaces/chat.interface';
 import { Server, Socket } from 'socket.io';
 import { ChatService } from './chat.service';
 import { User } from '../users/entities/user.entity';
+import { Message } from './entities/message.entity';
 
 @WebSocketGateway({
   cors: {

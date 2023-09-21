@@ -1,5 +1,6 @@
 import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
+import { Message } from './message.entity';
 
 @Entity()
 export class Room {
@@ -19,4 +20,12 @@ export class Room {
     nullable: false,
   })
   users: Array<User>;
+
+  @Column({
+    type: 'jsonb',
+    array: false,
+    default: () => "'[]'",
+    nullable: false,
+  })
+  messages: Array<Message>;
 }
