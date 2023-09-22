@@ -1,4 +1,4 @@
-import { IsString, ValidateNested } from 'class-validator';
+import { IsBoolean, IsString, ValidateNested } from 'class-validator';
 import { User } from '../../users/entities/user.entity';
 import { Type } from 'class-transformer';
 import { UserForMessageDto } from './user-for-message.dto';
@@ -11,11 +11,14 @@ export class CreateMessageDto {
   messageId: string;
 
   @IsString()
-  timeSent: string;
+  timeSent: Date;
 
   @IsString()
   message: string;
 
   @IsString()
   roomId: string;
+
+  @IsBoolean()
+  isRead: boolean;
 }

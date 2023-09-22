@@ -1,4 +1,10 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  JoinTable,
+  ManyToMany,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { Message } from './message.entity';
 import { User } from '../interfaces/chat.interface';
 
@@ -21,11 +27,7 @@ export class Room {
   })
   users: Array<User>;
 
-  @Column({
-    type: 'jsonb',
-    array: false,
-    default: () => "'[]'",
-    nullable: false,
-  })
-  messages: Array<Message>;
+  @JoinTable()
+  @ManyToMany((type) => Message, (message) => message, { cascade: true })
+  messages: Message[];
 }

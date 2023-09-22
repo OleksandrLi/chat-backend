@@ -9,22 +9,31 @@ import { Room } from './entities/room.entity';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { v4 as uuidv4 } from 'uuid';
 import { CreateMessageDto } from './dto/create-message-dto';
+import { Message } from './entities/message.entity';
 
 @Injectable()
 export class ChatService {
   constructor(
     @InjectRepository(Room)
     private readonly roomsRepository: Repository<Room>,
+    @InjectRepository(Message)
+    private readonly messagesRepository: Repository<Message>,
   ) {}
 
   async getRooms() {
-    return await this.roomsRepository.find();
+    return await this.roomsRepository.find({
+      relations: {
+        messages: true,
+      },
+    });
   }
 
   async getRoomById(roomId: string) {
     const room = await this.roomsRepository.findOne({
       where: { roomId: roomId },
-      select: { roomId: true, usersIds: true, users: true, messages: true },
+      relations: {
+        messages: true,
+      },
     });
 
     if (!room) {
@@ -47,6 +56,8 @@ export class ChatService {
       where: { usersIds: ArrayContains(numbers) },
     });
 
+    const messages = await this.getMessages(room.roomId);
+
     if (!room) {
       throw new ForbiddenException('Room does not exists');
     }
@@ -56,7 +67,7 @@ export class ChatService {
         roomId: room.roomId,
         usersIds: room.usersIds,
         users: room.users,
-        messages: room.messages,
+        messages: messages,
       },
     };
   }
@@ -81,11 +92,13 @@ export class ChatService {
   }
 
   async sendMessage(createMessageDto: CreateMessageDto) {
-    const newMessage = createMessageDto;
-    newMessage.messageId = uuidv4();
+    const newMessage = await this.sendMessageToRep(createMessageDto);
 
     const room = await this.roomsRepository.findOne({
       where: { roomId: createMessageDto.roomId },
+      relations: {
+        messages: true,
+      },
     });
     const updatedRoom = await this.roomsRepository.preload({
       id: room.id,
@@ -111,8 +124,13 @@ export class ChatService {
   }
 
   async userJoinRoom(roomId: string, userId: number) {
+    await this.setIsReadMessages(roomId, userId);
+
     const room = await this.roomsRepository.findOne({
       where: { roomId: roomId },
+      relations: {
+        messages: true,
+      },
     });
     const userUpdated = room.users.filter((item) => item.id === userId)[0];
     const userOriginal = room.users.filter((item) => item.id !== userId)[0];
@@ -120,7 +138,7 @@ export class ChatService {
     room.users = [userUpdated, userOriginal];
 
     await this.roomsRepository.save(room);
-    return room.users;
+    return { users: room.users, messages: room.messages };
   }
 
   async userLeaveRoom(roomId: string, userId: number) {
@@ -134,5 +152,42 @@ export class ChatService {
 
     await this.roomsRepository.save(room);
     return room.users;
+  }
+
+  private async getMessages(roomId: string) {
+    return await this.messagesRepository.find({
+      where: {
+        roomId: roomId,
+      },
+    });
+  }
+
+  private async sendMessageToRep(createMessageDto: CreateMessageDto) {
+    const newMessage = new Message();
+    newMessage.messageId = uuidv4();
+    newMessage.message = createMessageDto.message;
+    newMessage.roomId = createMessageDto.roomId;
+    newMessage.timeSent = createMessageDto.timeSent;
+    newMessage.user = createMessageDto.user;
+    newMessage.isRead = createMessageDto.isRead;
+
+    return this.messagesRepository.save(newMessage);
+  }
+
+  private async setIsReadMessages(roomId: string, userId: number) {
+    const messages = await this.messagesRepository.find({
+      where: {
+        roomId: roomId,
+      },
+    });
+
+    const messagesToUpdate = messages.reduce((accumulator, message, index) => {
+      if (message.user.id !== userId) {
+        message.isRead = true;
+      }
+      return [...accumulator, message];
+    }, []);
+
+    return await this.messagesRepository.save(messagesToUpdate);
   }
 }
