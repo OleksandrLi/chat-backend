@@ -31,18 +31,15 @@ export class AuthenticationService {
 
   async signUp(signUpDto: SignUpDto): Promise<TokenDataInterface> {
     try {
-      const user = new User();
-      user.name = signUpDto.name;
-      user.email = signUpDto.email;
+      const user = signUpDto as User;
       user.password = await this.hashingService.hash(signUpDto.password);
-      user.image = '';
 
       await this.usersRepository.save(user);
       return await this.generateTokens(user);
     } catch (err) {
       const pgUniqueViolationErrorCode = '23505';
       if (err.code === pgUniqueViolationErrorCode) {
-        throw new ConflictException();
+        throw new ConflictException('This email is already in use');
       }
       throw err;
     }
@@ -65,8 +62,6 @@ export class AuthenticationService {
 
     return await this.generateTokens(user);
   }
-
-  // TODO Active/current user по токену
 
   async generateTokens(
     user: User,

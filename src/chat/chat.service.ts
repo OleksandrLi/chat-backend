@@ -8,7 +8,6 @@ import { CreateMessageDto } from './dto/create-message-dto';
 import { Message } from './entities/message.entity';
 
 // TODO: Список чатів. (по токену)
-// TODO: Типізувати any в промісах
 
 @Injectable()
 export class ChatService {
@@ -38,7 +37,6 @@ export class ChatService {
     if (!room) {
       throw new NotFoundException('Room does not exists');
     }
-
     return {
       room,
     };
@@ -59,7 +57,6 @@ export class ChatService {
     if (!room) {
       throw new NotFoundException('Room does not exists');
     }
-
     return {
       room,
     };
@@ -68,16 +65,8 @@ export class ChatService {
   async addRoom(
     createRoomDto: CreateRoomDto,
   ): Promise<{ room: Room[] } | { room: Room }> {
-    // TODO змінити створення через класи
-
-    const room = new Room();
+    const room = createRoomDto as Room;
     room.roomId = uuidv4();
-    room.usersIds = createRoomDto.usersIds;
-    room.users = createRoomDto.users;
-
-    // TODO змінити статус при логіні/коли зайшов в застсоунок
-    room.users[0].isActive = false;
-    room.users[1].isActive = false;
 
     // TODO змінити передачу юзера по його токену
 
@@ -167,13 +156,8 @@ export class ChatService {
   private async sendMessageToRep(
     createMessageDto: CreateMessageDto,
   ): Promise<Message> {
-    const newMessage = new Message();
+    const newMessage = createMessageDto as Message;
     newMessage.messageId = uuidv4();
-    newMessage.message = createMessageDto.message;
-    newMessage.roomId = createMessageDto.roomId;
-    newMessage.timeSent = createMessageDto.timeSent;
-    newMessage.user = createMessageDto.user;
-    newMessage.isRead = createMessageDto.isRead;
 
     return this.messagesRepository.save(newMessage);
   }

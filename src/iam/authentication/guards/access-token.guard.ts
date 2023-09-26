@@ -11,7 +11,6 @@ import jwtConfig from '../../config/jwt.config';
 import { Request } from 'express';
 import { REQUEST_USER_KEY } from '../../iam.constants';
 
-// TODO повторити і розібратись
 @Injectable()
 export class AccessTokenGuard implements CanActivate {
   constructor(
