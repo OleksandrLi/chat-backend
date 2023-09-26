@@ -17,6 +17,7 @@ import { SignInDto } from './dto/sign-in.dto';
 import { SignUpDto } from './dto/sign-up.dto';
 import { ActiveUserData } from '../interfaces/active-user-data.interface';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { TokenDataInterface } from '../interfaces/token-data.interface';
 
 @Injectable()
 export class AuthenticationService {
@@ -28,7 +29,7 @@ export class AuthenticationService {
     private readonly jwtConfiguration: ConfigType<typeof jwtConfig>,
   ) {}
 
-  async signUp(signUpDto: SignUpDto) {
+  async signUp(signUpDto: SignUpDto): Promise<TokenDataInterface> {
     try {
       const user = new User();
       user.name = signUpDto.name;
@@ -47,7 +48,7 @@ export class AuthenticationService {
     }
   }
 
-  async signIn(signInDto: SignInDto) {
+  async signIn(signInDto: SignInDto): Promise<TokenDataInterface> {
     const user = await this.usersRepository.findOneBy({
       email: signInDto.email,
     });
@@ -61,10 +62,16 @@ export class AuthenticationService {
     if (!isEqual) {
       throw new BadRequestException('Password does not match');
     }
+
     return await this.generateTokens(user);
   }
 
-  async generateTokens(user: User, isRefresh?: boolean) {
+  // TODO Active/current user по токену
+
+  async generateTokens(
+    user: User,
+    isRefresh?: boolean,
+  ): Promise<TokenDataInterface> {
     const [accessToken, refreshToken] = await Promise.all([
       this.signToken<Partial<ActiveUserData>>(
         user.id,
@@ -73,10 +80,10 @@ export class AuthenticationService {
       ),
       this.signToken(user.id, this.jwtConfiguration.refreshTokenTtl),
     ]);
-    const data: any = {
+    const data = {
       accessToken,
       refreshToken,
-    };
+    } as TokenDataInterface;
 
     if (!isRefresh) {
       data.user = {
@@ -84,13 +91,16 @@ export class AuthenticationService {
         name: user.name,
         email: user.email,
         image: user.image,
+        isOnline: user.isOnline,
       };
     }
 
     return data;
   }
 
-  async refreshTokens(refreshTokenDto: RefreshTokenDto) {
+  async refreshTokens(
+    refreshTokenDto: RefreshTokenDto,
+  ): Promise<TokenDataInterface> {
     try {
       const { sub } = await this.jwtService.verifyAsync<
         Pick<ActiveUserData, 'sub'>
@@ -108,7 +118,11 @@ export class AuthenticationService {
     }
   }
 
-  private async signToken<T>(userId: number, expiresIn: number, payload?: T) {
+  private async signToken<T>(
+    userId: number,
+    expiresIn: number,
+    payload?: T,
+  ): Promise<string> {
     return await this.jwtService.signAsync(
       {
         sub: userId,

@@ -16,4 +16,7 @@ export class User {
 
   @Column()
   image: string;
+
+  @Column({ nullable: true })
+  isOnline: boolean;
 }

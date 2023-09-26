@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
 import { Not, Repository } from 'typeorm';
@@ -7,12 +6,14 @@ import { ActiveUserData } from '../iam/interfaces/active-user-data.interface';
 import * as AWS from 'aws-sdk';
 import { v4 as uuidv4 } from 'uuid';
 import { extname } from 'path';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly usersRepository: Repository<User>,
+    private readonly jwtService: JwtService,
   ) {}
 
   AWS_S3_BUCKET = process.env.AWS_S3_BUCKET_NAME;
@@ -22,45 +23,52 @@ export class UsersService {
     secretAccessKey: process.env.AWS_S3_BUCKET_SECRET_ACCESS_KEY,
   });
 
-  async findAll(user: ActiveUserData) {
+  async findAll(user: ActiveUserData): Promise<{ users: User[] }> {
     const users = await this.usersRepository.find({
       where: { id: Not(user.sub) },
-      select: { id: true, email: true, name: true, image: true },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        image: true,
+        isOnline: true,
+      },
     });
     return { users };
   }
 
-  async findProfile(user: ActiveUserData) {
+  async findProfile(user: ActiveUserData): Promise<{ profile: User }> {
     const userProfile = await this.usersRepository.findOne({
       where: { id: user.sub },
-    });
-    return {
-      profile: {
-        id: userProfile.id,
-        name: userProfile.name,
-        email: userProfile.email,
-        image: userProfile.image,
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        image: true,
+        isOnline: true,
       },
+    });
+
+    return {
+      profile: userProfile,
     };
   }
 
-  async findOne(id: number) {
+  async findOne(id: number): Promise<{ user: User }> {
     const user = await this.usersRepository.findOne({
       where: { id: id },
-      select: { id: true, email: true, name: true, image: true },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        image: true,
+        isOnline: true,
+      },
     });
     return { user };
   }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} user`;
-  }
-
-  async uploadFile(file, user: ActiveUserData) {
+  async uploadFile(file, user: ActiveUserData): Promise<{ image: string }> {
     const generatedName = uuidv4();
     const fileExtName = extname(file.originalname);
     const newName = `${generatedName}${fileExtName}`;
@@ -80,7 +88,7 @@ export class UsersService {
     return { image: updatedAvatar.image };
   }
 
-  async s3_upload(file, bucket, name, mimetype) {
+  async s3_upload(file, bucket, name, mimetype): Promise<{ image: string }> {
     const params = {
       Bucket: bucket,
       Key: String(name),
@@ -95,10 +103,20 @@ export class UsersService {
 
     try {
       const s3Response = await this.s3.upload(params).promise();
-      console.log(s3Response.Location);
       return { image: s3Response.Location };
     } catch (e) {
       console.log(e);
     }
+  }
+
+  async setUserIsOnline(jwtFromSocket: string, status: boolean): Promise<User> {
+    const decodedJwtAccessToken: any = this.jwtService.decode(jwtFromSocket);
+
+    const user = await this.usersRepository.preload({
+      id: decodedJwtAccessToken.sub,
+      isOnline: status,
+    });
+
+    return await this.usersRepository.save(user);
   }
 }
