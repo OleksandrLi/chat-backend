@@ -1,12 +1,14 @@
 import {
   Column,
   Entity,
+  JoinColumn,
   JoinTable,
   ManyToMany,
+  ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Message } from './message.entity';
-import { User } from '../interfaces/chat.interface';
+import { User } from '../../users/entities/user.entity';
 
 @Entity()
 export class Room {
@@ -16,16 +18,18 @@ export class Room {
   @Column({ nullable: true })
   roomId: string;
 
-  @Column('int', { array: true })
-  usersIds: number[];
+  // @Column('int', { array: true })
+  // usersIds: number[];
 
-  @Column({
-    type: 'jsonb',
-    array: false,
-    default: () => "'[]'",
-    nullable: false,
-  })
-  users: Array<User>;
+  @JoinTable()
+  @JoinColumn()
+  @ManyToOne((type) => User, (user) => User, { cascade: true })
+  client: User;
+
+  @JoinTable()
+  @JoinColumn()
+  @ManyToOne((type) => User, (user) => User, { cascade: true })
+  provider: User;
 
   @JoinTable()
   @ManyToMany((type) => Message, (message) => message, { cascade: true })

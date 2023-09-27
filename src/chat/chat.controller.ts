@@ -10,6 +10,8 @@ import {
 import { ChatService } from './chat.service';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { CreateMessageDto } from './dto/create-message-dto';
+import { ActiveUser } from '../iam/decorators/active-user-decorator';
+import { ActiveUserData } from '../iam/interfaces/active-user-data.interface';
 
 @Controller('rooms')
 export class ChatController {
@@ -20,19 +22,27 @@ export class ChatController {
     return this.chatService.getRooms();
   }
 
-  @Get('roomId=:roomId')
+  @Get('active-room/:roomId')
   getRoom(@Param() params) {
     return this.chatService.getRoomById(params.roomId);
   }
 
-  @Get(':user1Id/:user2Id')
-  getRoomByUsersId(@Param() params) {
-    return this.chatService.getRoomByUsersId(params.user1Id, params.user2Id);
+  @Get('user/:userId')
+  getRoomByUserId(@Param() params, @ActiveUser() user: ActiveUserData) {
+    return this.chatService.getRoomByUserId(params.userId, user.sub);
+  }
+
+  @Get('active-user-room')
+  getRoomByActiveUser(@ActiveUser() user: ActiveUserData) {
+    return this.chatService.getRoomByActiveUser(user);
   }
 
   @Post('')
-  addRoom(@Body() createRoomDto: CreateRoomDto) {
-    return this.chatService.addRoom(createRoomDto);
+  addRoom(
+    @Body() createRoomDto: CreateRoomDto,
+    @ActiveUser() user: ActiveUserData,
+  ) {
+    return this.chatService.addRoom(createRoomDto, user);
   }
 
   @Patch('send-message')

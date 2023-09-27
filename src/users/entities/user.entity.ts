@@ -1,5 +1,4 @@
 import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
-
 @Entity()
 export class User {
   @PrimaryGeneratedColumn()
@@ -15,7 +14,7 @@ export class User {
   password: string;
 
   @Column({ nullable: true })
-  image: string;
+  image: string | null;
 
   @Column({ nullable: true })
   isOnline: boolean;

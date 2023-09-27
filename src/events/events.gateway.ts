@@ -67,7 +67,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   //   this.server.to(payload.roomId).emit('chat', payload);
   //   return payload;
   // }
-  //
+
   // @SubscribeMessage('join_room')
   // async handleSetClientDataEvent(
   //   @MessageBody()
@@ -107,7 +107,6 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   // }
 
   async handleConnection(socket: Socket): Promise<void> {
-    this.logger.log(`Socket connected: ${socket.id}`);
     const user = await this.usersService.setUserIsOnline(
       socket.handshake.auth.token,
       true,
@@ -116,7 +115,6 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   async handleDisconnect(socket: Socket): Promise<void> {
-    this.logger.log(`Socket disconnected: ${socket.id}`);
     const user = await this.usersService.setUserIsOnline(
       socket.handshake.auth.token,
       false,

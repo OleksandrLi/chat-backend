@@ -32,6 +32,7 @@ export class AuthenticationService {
   async signUp(signUpDto: SignUpDto): Promise<TokenDataInterface> {
     try {
       const user = signUpDto as User;
+      user.image = '';
       user.password = await this.hashingService.hash(signUpDto.password);
 
       await this.usersRepository.save(user);
