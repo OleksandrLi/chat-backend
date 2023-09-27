@@ -6,13 +6,13 @@ import {
   OnGatewayConnection,
   OnGatewayDisconnect,
 } from '@nestjs/websockets';
-import { Logger } from '@nestjs/common';
 import {
   ServerToClientEvents,
   ClientToServerEvents,
 } from '../chat/interfaces/chat.interface';
 import { Server, Socket } from 'socket.io';
 import { UsersService } from '../users/users.service';
+import { Message } from '../chat/entities/message.entity';
 
 // TODO
 // фронт шлет запит на бек для рід меседжес - бекенд оновлює статуси повідомлень в базі - бекенд відправляє по вебсокету іншому юзеру що його повідомлення прочитані
@@ -32,7 +32,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     ClientToServerEvents
   >();
 
-  private logger = new Logger('EventsGateway');
+  // private logger = new Logger('EventsGateway');
 
   @SubscribeMessage('online')
   async handleSetOnline(
@@ -57,54 +57,14 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     await this.server.in(payload.socketId).socketsLeave(`${payload.userId}`);
     this.server.emit('offline', { userId: payload.userId } as never);
   }
-  //
-  // @SubscribeMessage('chat')
-  // async handleChatEvent(
-  //   @MessageBody()
-  //   payload: Message,
-  // ): Promise<Message> {
-  //   this.logger.log(payload);
-  //   this.server.to(payload.roomId).emit('chat', payload);
-  //   return payload;
-  // }
 
-  // @SubscribeMessage('join_room')
-  // async handleSetClientDataEvent(
-  //   @MessageBody()
-  //   payload: {
-  //     roomId: string;
-  //     userId: number;
-  //     socketId: string;
-  //   },
-  // ) {
-  //   if (payload.socketId) {
-  //     await this.server.in(payload.socketId).socketsJoin(payload.roomId);
-  //     const users = await this.chatService.userJoinRoom(
-  //       payload.roomId,
-  //       payload.userId,
-  //     );
-  //     this.server.to(payload.roomId).emit('join_room', users);
-  //   }
-  // }
-  //
-  // @SubscribeMessage('leave_room')
-  // async handleLeaveClientDataEvent(
-  //   @MessageBody()
-  //   payload: {
-  //     roomId: string;
-  //     userId: number;
-  //     socketId: string;
-  //   },
-  // ) {
-  //   if (payload.socketId) {
-  //     await this.server.in(payload.socketId).socketsLeave(payload.roomId);
-  //     const users = await this.chatService.userLeaveRoom(
-  //       payload.roomId,
-  //       payload.userId,
-  //     );
-  //     this.server.to(payload.roomId).emit('leave_room', users);
-  //   }
-  // }
+  @SubscribeMessage('chat')
+  async handleChatEvent(
+    @MessageBody()
+    payload: Message,
+  ): Promise<void> {
+    this.server.emit('chat', payload as never);
+  }
 
   async handleConnection(socket: Socket): Promise<void> {
     const user = await this.usersService.setUserIsOnline(

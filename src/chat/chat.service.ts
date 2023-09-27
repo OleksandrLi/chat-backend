@@ -8,6 +8,7 @@ import { CreateMessageDto } from './dto/create-message-dto';
 import { Message } from './entities/message.entity';
 import { ActiveUserData } from '../iam/interfaces/active-user-data.interface';
 import { User } from '../users/entities/user.entity';
+import { EventsGateway } from '../events/events.gateway';
 
 @Injectable()
 export class ChatService {
@@ -18,6 +19,7 @@ export class ChatService {
     private readonly messagesRepository: Repository<Message>,
     @InjectRepository(User)
     private readonly usersRepository: Repository<User>,
+    private readonly eventsGateway: EventsGateway,
   ) {}
 
   relations = {
@@ -110,41 +112,29 @@ export class ChatService {
     }
   }
 
-  // TODO з фронта відправку повідомлення по сокету вставити в цей ендпоінт на відправку повідомлення
-  // TODO змінити any коли виправлю
-  async sendMessage(createMessageDto: CreateMessageDto): Promise<any> {
-    const newMessage = await this.sendMessageToRep(createMessageDto);
+  async sendMessage(
+    createMessageDto: CreateMessageDto,
+    user: ActiveUserData,
+  ): Promise<Message> {
+    const newMessage = await this.sendMessageToRep(createMessageDto, user);
 
-    // const room = await this.roomsRepository.findOne({
-    //   where: { roomId: createMessageDto.roomId },
-    //   relations: {
-    //     messages: true,
-    //   },
-    // });
-    // const updatedRoom = await this.roomsRepository.preload({
-    //   id: room.id,
-    //   usersIds: room.usersIds,
-    //   users: room.users,
-    //   messages: [...room.messages, newMessage],
-    // });
-    // if (!updatedRoom) {
-    //   throw new NotFoundException(`This chat was not found`);
-    // }
-    // return this.roomsRepository.save(updatedRoom);
-  }
-
-  async deleteRoom(roomId: string): Promise<Room> {
     const room = await this.roomsRepository.findOne({
-      where: { roomId: roomId },
+      where: { roomId: createMessageDto.roomId },
+      relations: this.relations,
     });
-    return this.roomsRepository.remove(room);
+    const updatedRoom = await this.roomsRepository.preload({
+      id: room.id,
+      ...room,
+      messages: [...room.messages, newMessage],
+    });
+    if (!updatedRoom) {
+      throw new NotFoundException(`This chat was not found`);
+    }
+    await this.roomsRepository.save(updatedRoom);
+    await this.eventsGateway.handleChatEvent(newMessage);
+    return newMessage;
   }
 
-  async deleteRooms(): Promise<void> {
-    return this.roomsRepository.clear();
-  }
-
-  // TODO змінити any коли виправлю
   async userJoinRoom(roomId: string, userId: number): Promise<any> {
     await this.setIsReadMessages(roomId, userId);
     //
@@ -186,9 +176,17 @@ export class ChatService {
 
   private async sendMessageToRep(
     createMessageDto: CreateMessageDto,
+    user: ActiveUserData,
   ): Promise<Message> {
-    const newMessage = createMessageDto as Message;
-    newMessage.messageId = uuidv4();
+    const authorUser = await this.usersRepository.findOne({
+      where: { id: user.sub },
+    });
+
+    const newMessage = new Message();
+    newMessage.timeSent = createMessageDto.timeSent;
+    newMessage.message = createMessageDto.message;
+    newMessage.user = authorUser;
+    newMessage.roomId = createMessageDto.roomId;
 
     return this.messagesRepository.save(newMessage);
   }
@@ -236,5 +234,16 @@ export class ChatService {
     }
 
     return room.length ? room : null;
+  }
+
+  async deleteRoom(roomId: string): Promise<Room> {
+    const room = await this.roomsRepository.findOne({
+      where: { roomId: roomId },
+    });
+    return this.roomsRepository.remove(room);
+  }
+
+  async deleteRooms(): Promise<void> {
+    return this.roomsRepository.clear();
   }
 }

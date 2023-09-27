@@ -13,9 +13,6 @@ export class Message {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
-  messageId: string;
-
   @Column({
     type: 'jsonb',
     default: () => "'{}'",

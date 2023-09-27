@@ -46,8 +46,11 @@ export class ChatController {
   }
 
   @Patch('send-message')
-  sendMessage(@Body() createMessageDto: CreateMessageDto) {
-    return this.chatService.sendMessage(createMessageDto);
+  sendMessage(
+    @Body() createMessageDto: CreateMessageDto,
+    @ActiveUser() user: ActiveUserData,
+  ) {
+    return this.chatService.sendMessage(createMessageDto, user);
   }
 
   @Delete(':roomId')

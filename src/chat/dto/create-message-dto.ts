@@ -1,14 +1,9 @@
-import { IsBoolean, IsString, ValidateNested } from 'class-validator';
-import { User } from '../../users/entities/user.entity';
-import { Type } from 'class-transformer';
-import { UserForMessageDto } from './user-for-message.dto';
+import { IsString } from 'class-validator';
 
 export class CreateMessageDto {
-  @ValidateNested({ each: true, message: "Об'єкт має бути юзером" })
-  @Type(() => UserForMessageDto)
-  user: User;
-
-  messageId: string;
+  // @ValidateNested({ each: true, message: "Об'єкт має бути юзером" })
+  // @Type(() => UserForMessageDto)
+  // user: User;
 
   @IsString()
   timeSent: Date;
@@ -18,7 +13,4 @@ export class CreateMessageDto {
 
   @IsString()
   roomId: string;
-
-  @IsBoolean()
-  isRead: boolean;
 }
