@@ -17,7 +17,7 @@ export class Message {
 
   @JoinTable()
   @JoinColumn()
-  @ManyToOne((type) => User, (user) => User, { cascade: true })
+  @ManyToOne(() => User, () => User, { cascade: true })
   user: User;
 
   @Column({ nullable: true })
@@ -33,6 +33,6 @@ export class Message {
   isRead: boolean | null;
 
   @JoinTable()
-  @ManyToMany((type) => Room, (room) => room.messages)
+  @ManyToMany(() => Room, (room) => room.messages)
   room: Room[];
 }

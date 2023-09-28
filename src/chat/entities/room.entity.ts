@@ -18,20 +18,17 @@ export class Room {
   @Column({ nullable: true })
   roomId: string;
 
-  // @Column('int', { array: true })
-  // usersIds: number[];
-
   @JoinTable()
   @JoinColumn()
-  @ManyToOne((type) => User, (user) => User, { cascade: true })
+  @ManyToOne(() => User, () => User, { cascade: true })
   client: User;
 
   @JoinTable()
   @JoinColumn()
-  @ManyToOne((type) => User, (user) => User, { cascade: true })
+  @ManyToOne(() => User, () => User, { cascade: true })
   provider: User;
 
   @JoinTable()
-  @ManyToMany((type) => Message, (message) => message, { cascade: true })
+  @ManyToMany(() => Message, (message) => message, { cascade: true })
   messages: Message[];
 }
