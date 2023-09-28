@@ -136,7 +136,7 @@ export class ChatService {
     return newMessage;
   }
 
-  async readMessages(roomId: string, activeUserId: number) {
+  async readMessages(roomId: string, activeUserId: number): Promise<void> {
     const messages = await this.messagesRepository.find({
       where: {
         roomId: roomId,

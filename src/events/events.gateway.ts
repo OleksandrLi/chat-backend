@@ -9,7 +9,7 @@ import {
 import {
   ServerToClientEvents,
   ClientToServerEvents,
-} from '../chat/interfaces/chat.interface';
+} from './interfaces/chat.interface';
 import { Server, Socket } from 'socket.io';
 import { UsersService } from '../users/users.service';
 import { Message } from '../chat/entities/message.entity';

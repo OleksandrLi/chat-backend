@@ -10,23 +10,24 @@ import { UsersService } from './users.service';
 import { ActiveUser } from '../iam/decorators/active-user-decorator';
 import { ActiveUserData } from '../iam/interfaces/active-user-data.interface';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { User } from './entities/user.entity';
 
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get('profile')
-  findProfile(@ActiveUser() user: ActiveUserData) {
+  findProfile(@ActiveUser() user: ActiveUserData): Promise<{ profile: User }> {
     return this.usersService.findProfile(user);
   }
 
   @Get()
-  findAll(@ActiveUser() user: ActiveUserData) {
+  findAll(@ActiveUser() user: ActiveUserData): Promise<{ users: User[] }> {
     return this.usersService.findAll(user);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id') id: string): Promise<{ user: User }> {
     return this.usersService.findOne(+id);
   }
 
@@ -35,7 +36,7 @@ export class UsersController {
   uploadFile(
     @UploadedFile() file: Express.Multer.File,
     @ActiveUser() user: ActiveUserData,
-  ) {
+  ): Promise<{ image: string }> {
     return this.usersService.uploadFile(file, user);
   }
 }
