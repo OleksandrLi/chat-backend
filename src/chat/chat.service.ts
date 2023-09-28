@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Not, Repository } from 'typeorm';
 import { Room } from './entities/room.entity';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { v4 as uuidv4 } from 'uuid';
@@ -23,7 +23,7 @@ export class ChatService {
   ) {}
 
   relations = {
-    messages: true,
+    messages: { user: true },
     client: true,
     provider: true,
   };
@@ -48,6 +48,7 @@ export class ChatService {
         client: this.userData,
         provider: this.userData,
       },
+      order: { messages: { id: 'ASC' } },
     });
 
     if (!room) {
@@ -135,43 +136,23 @@ export class ChatService {
     return newMessage;
   }
 
-  async userJoinRoom(roomId: string, userId: number): Promise<any> {
-    await this.setIsReadMessages(roomId, userId);
-    //
-    //   const room = await this.roomsRepository.findOne({
-    //     where: { roomId: roomId },
-    //     relations: {
-    //       messages: true,
-    //     },
-    //   });
-    //   const userUpdated = room.users.filter((item) => item.id === userId)[0];
-    //   const userOriginal = room.users.filter((item) => item.id !== userId)[0];
-    //   userUpdated.isActive = true;
-    //   room.users = [userUpdated, userOriginal];
-    //
-    //   await this.roomsRepository.save(room);
-    //   return { users: room.users, messages: room.messages };
-    // }
-    //
-    // async userLeaveRoom(roomId: string, userId: number): Promise<any> {
-    //   const room = await this.roomsRepository.findOne({
-    //     where: { roomId: roomId },
-    //   });
-    //   const userUpdated = room.users.filter((item) => item.id === userId)[0];
-    //   const userOriginal = room.users.filter((item) => item.id !== userId)[0];
-    //   userUpdated.isActive = false;
-    //   room.users = [userUpdated, userOriginal];
-    //
-    //   await this.roomsRepository.save(room);
-    //   return room.users;
-    // }
-    //
-    // private async getMessages(roomId: string): Promise<Message[]> {
-    //   return await this.messagesRepository.find({
-    //     where: {
-    //       roomId: roomId,
-    //     },
-    //   });
+  async readMessages(roomId: string, activeUserId: number) {
+    const messages = await this.messagesRepository.find({
+      where: {
+        roomId: roomId,
+        user: { id: Not(activeUserId) },
+        isRead: IsNull(),
+      },
+    });
+    const messagesIds = messages.map((message) => {
+      return message.id;
+    });
+
+    await this.eventsGateway.handleReadMessageEvent({ roomId, messagesIds });
+    await this.messagesRepository.update(
+      { roomId: roomId, user: { id: Not(activeUserId) }, isRead: IsNull() },
+      { isRead: true },
+    );
   }
 
   private async sendMessageToRep(
@@ -189,26 +170,6 @@ export class ChatService {
     newMessage.roomId = createMessageDto.roomId;
 
     return this.messagesRepository.save(newMessage);
-  }
-
-  private async setIsReadMessages(
-    roomId: string,
-    userId: number,
-  ): Promise<any[]> {
-    const messages = await this.messagesRepository.find({
-      where: {
-        roomId: roomId,
-      },
-    });
-
-    const messagesToUpdate = messages.reduce((accumulator, message, index) => {
-      if (message.user.id !== userId) {
-        message.isRead = true;
-      }
-      return [...accumulator, message];
-    }, []);
-
-    return await this.messagesRepository.save(messagesToUpdate);
   }
 
   private async getRoom(

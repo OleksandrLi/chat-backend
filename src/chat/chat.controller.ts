@@ -53,6 +53,11 @@ export class ChatController {
     return this.chatService.sendMessage(createMessageDto, user);
   }
 
+  @Patch(':roomId/read-messages')
+  readMessages(@Param() params, @ActiveUser() user: ActiveUserData) {
+    return this.chatService.readMessages(params.roomId, user.sub);
+  }
+
   @Delete(':roomId')
   removeRoom(@Param() params) {
     return this.chatService.deleteRoom(params.roomId);

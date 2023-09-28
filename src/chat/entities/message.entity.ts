@@ -1,8 +1,10 @@
 import {
   Column,
   Entity,
+  JoinColumn,
   JoinTable,
   ManyToMany,
+  ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
@@ -13,11 +15,9 @@ export class Message {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({
-    type: 'jsonb',
-    default: () => "'{}'",
-    nullable: true,
-  })
+  @JoinTable()
+  @JoinColumn()
+  @ManyToOne((type) => User, (user) => User, { cascade: true })
   user: User;
 
   @Column({ nullable: true })
@@ -30,7 +30,7 @@ export class Message {
   roomId: string;
 
   @Column({ nullable: true })
-  isRead: boolean;
+  isRead: boolean | null;
 
   @JoinTable()
   @ManyToMany((type) => Room, (room) => room.messages)

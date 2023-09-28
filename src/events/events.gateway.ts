@@ -32,8 +32,6 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     ClientToServerEvents
   >();
 
-  // private logger = new Logger('EventsGateway');
-
   @SubscribeMessage('online')
   async handleSetOnline(
     @MessageBody()
@@ -64,6 +62,17 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     payload: Message,
   ): Promise<void> {
     this.server.emit('chat', payload as never);
+  }
+
+  @SubscribeMessage('read_messages')
+  async handleReadMessageEvent(
+    @MessageBody()
+    payload: {
+      roomId: string;
+      messagesIds: number[];
+    },
+  ): Promise<void> {
+    this.server.emit('read_messages', payload as never);
   }
 
   async handleConnection(socket: Socket): Promise<void> {
