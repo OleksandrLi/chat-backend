@@ -14,11 +14,6 @@ import { Server, Socket } from 'socket.io';
 import { UsersService } from '../users/users.service';
 import { Message } from '../chat/entities/message.entity';
 
-// TODO
-// фронт шлет запит на бек для рід меседжес - бекенд оновлює статуси повідомлень в базі - бекенд відправляє по вебсокету іншому юзеру що його повідомлення прочитані
-// юзефект що слідкує за статусами повідомлень - якщо непрчоитані повідомлення, відіслати запит на ендпоінт для рід меседжів
-// приклад на елітлі
-
 @WebSocketGateway({
   cors: {
     origin: '*',
@@ -59,7 +54,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('chat')
   async handleChatEvent(
     @MessageBody()
-    payload: Message,
+    payload: Message[],
   ): Promise<void> {
     this.server.emit('chat', payload as never);
   }

@@ -114,26 +114,26 @@ export class ChatService {
   }
 
   async sendMessage(
-    createMessageDto: CreateMessageDto,
+    createMessageDto: CreateMessageDto[],
     user: ActiveUserData,
-  ): Promise<Message> {
-    const newMessage = await this.sendMessageToRep(createMessageDto, user);
+  ): Promise<Message[]> {
+    const newMessages = await this.sendMessageToRep(createMessageDto, user);
 
     const room = await this.roomsRepository.findOne({
-      where: { roomId: createMessageDto.roomId },
+      where: { roomId: createMessageDto[0].roomId },
       relations: this.relations,
     });
     const updatedRoom = await this.roomsRepository.preload({
       id: room.id,
       ...room,
-      messages: [...room.messages, newMessage],
+      messages: [...room.messages, ...newMessages],
     });
     if (!updatedRoom) {
       throw new NotFoundException(`This chat was not found`);
     }
     await this.roomsRepository.save(updatedRoom);
-    await this.eventsGateway.handleChatEvent(newMessage);
-    return newMessage;
+    await this.eventsGateway.handleChatEvent(newMessages);
+    return newMessages;
   }
 
   async readMessages(roomId: string, activeUserId: number): Promise<void> {
@@ -156,20 +156,25 @@ export class ChatService {
   }
 
   private async sendMessageToRep(
-    createMessageDto: CreateMessageDto,
+    createMessageDto: CreateMessageDto[],
     user: ActiveUserData,
-  ): Promise<Message> {
+  ): Promise<Message[]> {
     const authorUser = await this.usersRepository.findOne({
       where: { id: user.sub },
     });
 
-    const newMessage = new Message();
-    newMessage.timeSent = createMessageDto.timeSent;
-    newMessage.message = createMessageDto.message;
-    newMessage.user = authorUser;
-    newMessage.roomId = createMessageDto.roomId;
+    const newData = createMessageDto.map((messageDto) => {
+      const newMessage = new Message();
+      newMessage.timeSent = new Date(Date.now());
+      newMessage.message = messageDto.message;
+      newMessage.user = authorUser;
+      newMessage.roomId = messageDto.roomId;
 
-    return this.messagesRepository.save(newMessage);
+      this.messagesRepository.save(newMessage);
+      return newMessage;
+    });
+
+    return newData;
   }
 
   private async getRoom(

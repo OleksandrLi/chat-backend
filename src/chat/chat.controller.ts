@@ -54,9 +54,9 @@ export class ChatController {
 
   @Patch('send-message')
   sendMessage(
-    @Body() createMessageDto: CreateMessageDto,
+    @Body() createMessageDto: CreateMessageDto[],
     @ActiveUser() user: ActiveUserData,
-  ): Promise<Message> {
+  ): Promise<Message[]> {
     return this.chatService.sendMessage(createMessageDto, user);
   }
 
