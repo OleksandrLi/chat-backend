@@ -9,6 +9,8 @@ import { Message } from './entities/message.entity';
 import { ActiveUserData } from '../iam/interfaces/active-user-data.interface';
 import { User } from '../users/entities/user.entity';
 import { EventsGateway } from '../events/events.gateway';
+import { extname } from 'path';
+import * as AWS from 'aws-sdk';
 
 @Injectable()
 export class ChatService {
@@ -29,6 +31,13 @@ export class ChatService {
   };
 
   userData = { id: true, image: true, isOnline: true, name: true };
+
+  AWS_S3_BUCKET = process.env.AWS_S3_BUCKET_NAME;
+  AWS_S3_BUCKET_LOCATION = process.env.AWS_S3_BUCKET_LOCATION;
+  s3 = new AWS.S3({
+    accessKeyId: process.env.AWS_S3_BUCKET_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_S3_BUCKET_SECRET_ACCESS_KEY,
+  });
 
   async getRooms(): Promise<Room[]> {
     return await this.roomsRepository.find({
@@ -114,13 +123,18 @@ export class ChatService {
   }
 
   async sendMessage(
-    createMessageDto: CreateMessageDto[],
+    files: Express.Multer.File[],
+    createMessageDto: CreateMessageDto,
     user: ActiveUserData,
-  ): Promise<Message[]> {
-    const newMessages = await this.sendMessageToRep(createMessageDto, user);
+  ) {
+    const newMessages = await this.sendMessageToRep(
+      createMessageDto,
+      user,
+      files,
+    );
 
     const room = await this.roomsRepository.findOne({
-      where: { roomId: createMessageDto[0].roomId },
+      where: { roomId: createMessageDto.roomId },
       relations: this.relations,
     });
     const updatedRoom = await this.roomsRepository.preload({
@@ -156,25 +170,56 @@ export class ChatService {
   }
 
   private async sendMessageToRep(
-    createMessageDto: CreateMessageDto[],
+    createMessageDto: CreateMessageDto,
     user: ActiveUserData,
+    files: Express.Multer.File[],
   ): Promise<Message[]> {
     const authorUser = await this.usersRepository.findOne({
       where: { id: user.sub },
     });
 
-    const newData = createMessageDto.map((messageDto) => {
+    let images;
+    if (files.length) {
+      images = await this.getImages(files);
+    }
+
+    const newData = createMessageDto.message.map((messageDto, index) => {
       const newMessage = new Message();
       newMessage.timeSent = new Date(Date.now());
-      newMessage.message = messageDto.message;
+      newMessage.message = messageDto;
       newMessage.user = authorUser;
-      newMessage.roomId = messageDto.roomId;
+      newMessage.roomId = createMessageDto.roomId;
+      newMessage.image =
+        files.length && images[index].image ? images[index].image : null;
 
       this.messagesRepository.save(newMessage);
       return newMessage;
     });
 
     return newData;
+  }
+
+  private async getImages(
+    files: Express.Multer.File[],
+  ): Promise<{ image: string }[]> {
+    const images = [] as { image: string }[];
+
+    for (const file of files) {
+      const generatedName = uuidv4();
+      const fileExtName = extname(file.originalname);
+      const newName = `${generatedName}${fileExtName}`;
+
+      const image = await this.s3_upload(
+        file.buffer,
+        this.AWS_S3_BUCKET,
+        newName,
+        file.mimetype,
+      );
+
+      images.push(image);
+    }
+
+    return images;
   }
 
   private async getRoom(
@@ -211,5 +256,26 @@ export class ChatService {
 
   async deleteRooms(): Promise<void> {
     return this.roomsRepository.clear();
+  }
+
+  async s3_upload(file, bucket, name, mimetype): Promise<{ image: string }> {
+    const params = {
+      Bucket: bucket,
+      Key: String(name),
+      Body: file,
+      ACL: 'public-read',
+      ContentType: mimetype,
+      ContentDisposition: 'inline',
+      CreateBucketConfiguration: {
+        LocationConstraint: this.AWS_S3_BUCKET_LOCATION,
+      },
+    };
+
+    try {
+      const s3Response = await this.s3.upload(params).promise();
+      return { image: s3Response.Location };
+    } catch (e) {
+      console.log(e);
+    }
   }
 }

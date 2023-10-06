@@ -6,6 +6,8 @@ import {
   Param,
   Patch,
   Post,
+  UploadedFiles,
+  UseInterceptors,
 } from '@nestjs/common';
 import { ChatService } from './chat.service';
 import { CreateRoomDto } from './dto/create-room.dto';
@@ -13,7 +15,7 @@ import { CreateMessageDto } from './dto/create-message-dto';
 import { ActiveUser } from '../iam/decorators/active-user-decorator';
 import { ActiveUserData } from '../iam/interfaces/active-user-data.interface';
 import { Room } from './entities/room.entity';
-import { Message } from './entities/message.entity';
+import { FilesInterceptor } from '@nestjs/platform-express';
 
 @Controller('rooms')
 export class ChatController {
@@ -53,11 +55,13 @@ export class ChatController {
   }
 
   @Patch('send-message')
+  @UseInterceptors(FilesInterceptor('files'))
   sendMessage(
-    @Body() createMessageDto: CreateMessageDto[],
+    @UploadedFiles() files: Express.Multer.File[],
+    @Body() createMessageDto: CreateMessageDto,
     @ActiveUser() user: ActiveUserData,
-  ): Promise<Message[]> {
-    return this.chatService.sendMessage(createMessageDto, user);
+  ) {
+    return this.chatService.sendMessage(files, createMessageDto, user);
   }
 
   @Patch(':roomId/read-messages')

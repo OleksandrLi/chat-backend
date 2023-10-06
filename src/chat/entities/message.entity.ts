@@ -26,6 +26,9 @@ export class Message {
   @Column()
   message: string;
 
+  @Column({ nullable: true })
+  image: string;
+
   @Column()
   roomId: string;
 

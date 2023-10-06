@@ -1,9 +1,12 @@
-import { IsString } from 'class-validator';
+import { IsString, IsArray } from 'class-validator';
 
 export class CreateMessageDto {
-  @IsString()
-  message: string;
+  @IsArray()
+  @IsString({ each: true })
+  message: string[];
 
   @IsString()
   roomId: string;
+
+  image: File;
 }
