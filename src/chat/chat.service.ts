@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { IsNull, Not, Repository } from 'typeorm';
+import { In, IsNull, Not, Repository } from 'typeorm';
 import { Room } from './entities/room.entity';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { v4 as uuidv4 } from 'uuid';
@@ -162,11 +162,17 @@ export class ChatService {
       return message.id;
     });
 
-    await this.eventsGateway.handleReadMessageEvent({ roomId, messagesIds });
     await this.messagesRepository.update(
       { roomId: roomId, user: { id: Not(activeUserId) }, isRead: IsNull() },
       { isRead: true },
     );
+
+    const newMessages = await this.messagesRepository.find({
+      where: { id: In(messagesIds) },
+      relations: { user: true },
+    });
+
+    await this.eventsGateway.handleReadMessageEvent({ roomId, newMessages });
   }
 
   private async sendMessageToRep(
@@ -205,18 +211,22 @@ export class ChatService {
     const images = [] as { image: string }[];
 
     for (const file of files) {
-      const generatedName = uuidv4();
-      const fileExtName = extname(file.originalname);
-      const newName = `${generatedName}${fileExtName}`;
+      if (file.size === 0) {
+        images.push({ image: '' });
+      } else {
+        const generatedName = uuidv4();
+        const fileExtName = extname(file.originalname);
+        const newName = `${generatedName}${fileExtName}`;
 
-      const image = await this.s3_upload(
-        file.buffer,
-        this.AWS_S3_BUCKET,
-        newName,
-        file.mimetype,
-      );
+        const image = await this.s3_upload(
+          file.buffer,
+          this.AWS_S3_BUCKET,
+          newName,
+          file.mimetype,
+        );
 
-      images.push(image);
+        images.push(image);
+      }
     }
 
     return images;

@@ -64,7 +64,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody()
     payload: {
       roomId: string;
-      messagesIds: number[];
+      newMessages: any;
     },
   ): Promise<void> {
     this.server.emit('read_messages', payload as never);
