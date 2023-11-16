@@ -19,6 +19,10 @@ import { ActiveUserData } from '../interfaces/active-user-data.interface';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { TokenDataInterface } from '../interfaces/token-data.interface';
 
+interface MyToken {
+  rememberMe: boolean;
+}
+
 @Injectable()
 export class AuthenticationService {
   constructor(
@@ -61,12 +65,13 @@ export class AuthenticationService {
       throw new BadRequestException('Password does not match');
     }
 
-    return await this.generateTokens(user);
+    return await this.generateTokens(user, undefined, signInDto.rememberMe);
   }
 
   async generateTokens(
     user: User,
     isRefresh?: boolean,
+    rememberMe?: boolean,
   ): Promise<TokenDataInterface> {
     const [accessToken, refreshToken] = await Promise.all([
       this.signToken<Partial<ActiveUserData>>(
@@ -74,7 +79,13 @@ export class AuthenticationService {
         this.jwtConfiguration.accessTokenTtl,
         { email: user.email, name: user.name, image: user.image },
       ),
-      this.signToken(user.id, this.jwtConfiguration.refreshTokenTtl),
+      this.signToken(
+        user.id,
+        !rememberMe
+          ? this.jwtConfiguration.refreshTokenTtl
+          : this.jwtConfiguration.refreshTokenTtlRememberMe,
+        { rememberMe },
+      ),
     ]);
     const data = {
       accessToken,
@@ -98,6 +109,9 @@ export class AuthenticationService {
     refreshTokenDto: RefreshTokenDto,
   ): Promise<TokenDataInterface> {
     try {
+      const decodedJwt = this.jwtService.decode(
+        refreshTokenDto.refreshToken,
+      ) as MyToken;
       const { sub } = await this.jwtService.verifyAsync<
         Pick<ActiveUserData, 'sub'>
       >(refreshTokenDto.refreshToken, {
@@ -108,7 +122,7 @@ export class AuthenticationService {
       const user = await this.usersRepository.findOneByOrFail({
         id: sub,
       });
-      return this.generateTokens(user, true);
+      return this.generateTokens(user, true, decodedJwt.rememberMe);
     } catch (err) {
       throw new UnauthorizedException();
     }
