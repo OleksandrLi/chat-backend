@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UploadedFiles,
   UseInterceptors,
 } from '@nestjs/common';
@@ -16,6 +17,7 @@ import { ActiveUser } from '../iam/decorators/active-user-decorator';
 import { ActiveUserData } from '../iam/interfaces/active-user-data.interface';
 import { Room } from './entities/room.entity';
 import { FilesInterceptor } from '@nestjs/platform-express';
+import { Message } from './entities/message.entity';
 
 @Controller('rooms')
 export class ChatController {
@@ -29,6 +31,16 @@ export class ChatController {
   @Get('active-room/:roomId')
   getRoom(@Param() params): Promise<{ room: Room }> {
     return this.chatService.getRoomById(params.roomId);
+  }
+
+  @Get('active-room/:roomId/messages')
+  getMessages(
+    @Param() params,
+    @Query() paginationQuery,
+  ): Promise<{ total: number; messages: Message[] }> {
+    console.log(paginationQuery);
+    const { limit, offset } = paginationQuery;
+    return this.chatService.getMessages(params.roomId, limit, offset);
   }
 
   @Get('user/:userId')

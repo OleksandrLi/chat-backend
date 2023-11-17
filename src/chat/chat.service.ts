@@ -52,12 +52,12 @@ export class ChatService {
   async getRoomById(roomId: string): Promise<{ room: Room }> {
     const room = await this.roomsRepository.findOne({
       where: { roomId: roomId },
-      relations: this.relations,
+      relations: { ...this.relations, messages: false },
       select: {
         client: this.userData,
         provider: this.userData,
+        messages: false,
       },
-      order: { messages: { id: 'ASC' } },
     });
 
     if (!room) {
@@ -65,6 +65,30 @@ export class ChatService {
     }
     return {
       room,
+    };
+  }
+
+  async getMessages(
+    roomId: string,
+    limit: string,
+    offset: string,
+  ): Promise<{ total: number; messages: Message[] }> {
+    const [messages, total] = await this.messagesRepository.findAndCount({
+      where: {
+        roomId: roomId,
+      },
+      order: { id: 'ASC' },
+      take: Number(limit) || 20,
+      skip: Number(offset) || 0,
+      relations: { user: true },
+    });
+
+    if (!messages) {
+      throw new NotFoundException('Room does not exists');
+    }
+    return {
+      total: total,
+      messages,
     };
   }
 
