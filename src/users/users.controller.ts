@@ -5,6 +5,7 @@ import {
   Param,
   UseInterceptors,
   UploadedFile,
+  Query,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { ActiveUser } from '../iam/decorators/active-user-decorator';
@@ -22,8 +23,12 @@ export class UsersController {
   }
 
   @Get()
-  findAll(@ActiveUser() user: ActiveUserData): Promise<{ users: User[] }> {
-    return this.usersService.findAll(user);
+  findAll(
+    @Query() usersQuery,
+    @ActiveUser() user: ActiveUserData,
+  ): Promise<{ users: User[] }> {
+    const { search } = usersQuery;
+    return this.usersService.findAll(user, search);
   }
 
   @Get(':id')

@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, IsNull, Not, Repository } from 'typeorm';
+import { In, IsNull, Like, Not, Repository } from 'typeorm';
 import { Room } from './entities/room.entity';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { v4 as uuidv4 } from 'uuid';
@@ -41,7 +41,7 @@ export class ChatService {
 
   async getRooms(): Promise<Room[]> {
     return await this.roomsRepository.find({
-      relations: this.relations,
+      relations: { ...this.relations, messages: false },
       select: {
         client: this.userData,
         provider: this.userData,
@@ -106,15 +106,24 @@ export class ChatService {
     };
   }
 
-  async getRoomByActiveUser(user: ActiveUserData): Promise<{ rooms: Room[] }> {
+  async getRoomByActiveUser(
+    user: ActiveUserData,
+    search: string,
+  ): Promise<{ rooms: Room[] }> {
     const clientRooms = await this.roomsRepository.find({
-      where: { client: { id: user.sub } },
-      relations: this.relations,
+      where: {
+        client: { id: user.sub },
+        provider: { name: Like(`%${search ? search : ''}%`) },
+      },
+      relations: { ...this.relations, messages: false },
     });
 
     const providerRooms = await this.roomsRepository.find({
-      where: { provider: { id: user.sub } },
-      relations: this.relations,
+      where: {
+        provider: { id: user.sub },
+        client: { name: Like(`%${search ? search : ''}%`) },
+      },
+      relations: { ...this.relations, messages: false },
     });
 
     return { rooms: [...clientRooms, ...providerRooms] };

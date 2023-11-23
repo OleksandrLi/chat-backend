@@ -38,7 +38,6 @@ export class ChatController {
     @Param() params,
     @Query() paginationQuery,
   ): Promise<{ total: number; messages: Message[] }> {
-    console.log(paginationQuery);
     const { limit, offset } = paginationQuery;
     return this.chatService.getMessages(params.roomId, limit, offset);
   }
@@ -53,9 +52,11 @@ export class ChatController {
 
   @Get('active-user-room')
   getRoomByActiveUser(
+    @Query() chatsQuery,
     @ActiveUser() user: ActiveUserData,
   ): Promise<{ rooms: Room[] }> {
-    return this.chatService.getRoomByActiveUser(user);
+    const { search } = chatsQuery;
+    return this.chatService.getRoomByActiveUser(user, search);
   }
 
   @Post('')

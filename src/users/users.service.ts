@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
-import { Not, Repository } from 'typeorm';
+import { Like, Not, Repository } from 'typeorm';
 import { ActiveUserData } from '../iam/interfaces/active-user-data.interface';
 import * as AWS from 'aws-sdk';
 import { v4 as uuidv4 } from 'uuid';
@@ -23,9 +23,12 @@ export class UsersService {
     secretAccessKey: process.env.AWS_S3_BUCKET_SECRET_ACCESS_KEY,
   });
 
-  async findAll(user: ActiveUserData): Promise<{ users: User[] }> {
+  async findAll(
+    user: ActiveUserData,
+    search: string,
+  ): Promise<{ users: User[] }> {
     const users = await this.usersRepository.find({
-      where: { id: Not(user.sub) },
+      where: { id: Not(user.sub), name: Like(`%${search ? search : ''}%`) },
       select: {
         id: true,
         email: true,
