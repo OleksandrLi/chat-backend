@@ -70,6 +70,18 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.server.emit('read_messages', payload as never);
   }
 
+  @SubscribeMessage('typing')
+  async handleSetIsTyping(
+    @MessageBody()
+    payload: {
+      user_id: number;
+      chat_id: string;
+      is_typing: boolean;
+    },
+  ): Promise<void> {
+    this.server.emit('chat_typing', payload as never);
+  }
+
   async handleConnection(socket: Socket): Promise<void> {
     const user = await this.usersService.setUserIsOnline(
       socket.handshake.auth.token,
