@@ -77,7 +77,7 @@ export class ChatService {
       where: {
         roomId: roomId,
       },
-      order: { id: 'ASC' },
+      order: { id: 'DESC' },
       take: Number(limit) || 20,
       skip: Number(offset) || 0,
       relations: { user: true },
@@ -159,7 +159,7 @@ export class ChatService {
     files: Express.Multer.File[],
     createMessageDto: CreateMessageDto,
     user: ActiveUserData,
-  ) {
+  ): Promise<Message[]> {
     const newMessages = await this.sendMessageToRep(
       createMessageDto,
       user,

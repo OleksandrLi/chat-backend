@@ -17,7 +17,7 @@ import { SignInDto } from './dto/sign-in.dto';
 import { SignUpDto } from './dto/sign-up.dto';
 import { ActiveUserData } from '../interfaces/active-user-data.interface';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
-import { TokenDataInterface } from '../interfaces/token-data.interface';
+import { TokenData } from './entities/token-data.entity';
 
 interface MyToken {
   rememberMe: boolean;
@@ -33,7 +33,7 @@ export class AuthenticationService {
     private readonly jwtConfiguration: ConfigType<typeof jwtConfig>,
   ) {}
 
-  async signUp(signUpDto: SignUpDto): Promise<TokenDataInterface> {
+  async signUp(signUpDto: SignUpDto): Promise<TokenData> {
     try {
       const user = signUpDto as User;
       user.image = '';
@@ -50,7 +50,7 @@ export class AuthenticationService {
     }
   }
 
-  async signIn(signInDto: SignInDto): Promise<TokenDataInterface> {
+  async signIn(signInDto: SignInDto): Promise<TokenData> {
     const user = await this.usersRepository.findOneBy({
       email: signInDto.email,
     });
@@ -72,7 +72,7 @@ export class AuthenticationService {
     user: User,
     isRefresh?: boolean,
     rememberMe?: boolean,
-  ): Promise<TokenDataInterface> {
+  ): Promise<TokenData> {
     const [accessToken, refreshToken] = await Promise.all([
       this.signToken<Partial<ActiveUserData>>(
         user.id,
@@ -90,7 +90,7 @@ export class AuthenticationService {
     const data = {
       accessToken,
       refreshToken,
-    } as TokenDataInterface;
+    } as TokenData;
 
     if (!isRefresh) {
       data.user = {
@@ -105,9 +105,7 @@ export class AuthenticationService {
     return data;
   }
 
-  async refreshTokens(
-    refreshTokenDto: RefreshTokenDto,
-  ): Promise<TokenDataInterface> {
+  async refreshTokens(refreshTokenDto: RefreshTokenDto): Promise<TokenData> {
     try {
       const decodedJwt = this.jwtService.decode(
         refreshTokenDto.refreshToken,

@@ -7,6 +7,7 @@ import * as AWS from 'aws-sdk';
 import { v4 as uuidv4 } from 'uuid';
 import { extname } from 'path';
 import { JwtService } from '@nestjs/jwt';
+import { Avatar } from './entities/avatar.entity';
 
 @Injectable()
 export class UsersService {
@@ -71,7 +72,7 @@ export class UsersService {
     return { user };
   }
 
-  async uploadFile(file, user: ActiveUserData): Promise<{ image: string }> {
+  async uploadFile(file, user: ActiveUserData): Promise<Avatar> {
     const generatedName = uuidv4();
     const fileExtName = extname(file.originalname);
     const newName = `${generatedName}${fileExtName}`;
