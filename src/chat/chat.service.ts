@@ -166,19 +166,20 @@ export class ChatService {
       files,
     );
 
-    const room = await this.roomsRepository.findOne({
-      where: { roomId: createMessageDto.roomId },
-      relations: this.relations,
-    });
-    const updatedRoom = await this.roomsRepository.preload({
-      id: room.id,
-      ...room,
-      messages: [...room.messages, ...newMessages],
-    });
-    if (!updatedRoom) {
-      throw new NotFoundException(`This chat was not found`);
-    }
-    await this.roomsRepository.save(updatedRoom);
+    // const room = await this.roomsRepository.findOne({
+    //   where: { roomId: createMessageDto.roomId },
+    //   relations: this.relations,
+    // });
+    // const updatedRoom = await this.roomsRepository.preload({
+    //   id: room.id,
+    //   ...room,
+    //   messages: [...room.messages, ...newMessages],
+    // });
+    // if (!updatedRoom) {
+    //   throw new NotFoundException(`This chat was not found`);
+    // }
+    // await this.roomsRepository.save(updatedRoom);
+
     await this.eventsGateway.handleChatEvent(newMessages);
     return newMessages;
   }
@@ -203,6 +204,7 @@ export class ChatService {
     const newMessages = await this.messagesRepository.find({
       where: { id: In(messagesIds) },
       relations: { user: true },
+      order: { id: 'DESC' },
     });
 
     await this.eventsGateway.handleReadMessageEvent({ roomId, newMessages });
