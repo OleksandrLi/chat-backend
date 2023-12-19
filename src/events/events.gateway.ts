@@ -27,6 +27,56 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     ClientToServerEvents
   >();
 
+  @SubscribeMessage('call_user')
+  async callToUser(
+    @MessageBody()
+    data: {
+      chatId: string;
+      callToUser: string | number;
+      signal: string; // stringed RTCSessionDescription
+      withVideo: boolean;
+    },
+  ): Promise<void> {
+    this.server.emit('call_user', {
+      chatId: data.chatId,
+      callToUser: data.callToUser,
+      signal: data.signal,
+      withVideo: data.withVideo,
+    } as never);
+  }
+
+  @SubscribeMessage('answer_call')
+  async callAcceptedFromUser(
+    @MessageBody()
+    data: {
+      chatId: string;
+      callToUser: string | number;
+      signal: string; // stringed RTCSessionDescription
+      withVideo: boolean;
+    },
+  ): Promise<void> {
+    this.server.emit('call_accepted', {
+      chatId: data.chatId,
+      callToUser: data.callToUser,
+      signal: data.signal,
+      withVideo: data.withVideo,
+    } as never);
+  }
+
+  @SubscribeMessage('disconnect_from_call')
+  async disconnectFromCall(
+    @MessageBody()
+    data: {
+      chatId: string;
+      callToUser: string | number;
+    },
+  ): Promise<void> {
+    this.server.emit('disconnect_from_call', {
+      chatId: data.chatId,
+      callToUser: data.callToUser,
+    } as never);
+  }
+
   @SubscribeMessage('online')
   async handleSetOnline(
     @MessageBody()
